@@ -233,6 +233,7 @@ module Zetetic #:nodoc:
           if configuration[:through].nil?
             habtm_options = { :class_name => name }
             if d = options[:dependent] ; habtm_options[:dependent] = d ; end
+            if l = options[:limit] ; habtm_options[:limit] = l ; end
             has_and_belongs_to_many "#{relationship}_out".to_sym, habtm_options.merge( { :foreign_key => configuration[:foreign_key], :association_foreign_key => configuration[:association_foreign_key], :join_table => configuration[:join_table], :conditions => configuration[:conditions] } )
           
             has_and_belongs_to_many "#{relationship}_in".to_sym, habtm_options.merge( { :foreign_key => configuration[:association_foreign_key], :association_foreign_key => configuration[:foreign_key],
@@ -244,6 +245,7 @@ module Zetetic #:nodoc:
       
             through_options = { :class_name => through_class }
             if d = options[:dependent] ; through_options[:dependent] = d ; end
+            if l = options[:limit] ; through_options[:limit] = l ; end
 
             # a node has many outbound realationships
             has_many "#{through_sym}_out".to_sym, through_options.merge( { :foreign_key => configuration[:foreign_key] } )
