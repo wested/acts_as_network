@@ -220,6 +220,7 @@ module Zetetic #:nodoc:
         # * <tt>:association_foreign_key</tt> - name of the foreign key for the target side, 
         #   i.e. person_id_target. Defaults to the same value as +foreign_key+ with a <tt>_target</tt> suffix
         # * <tt>:conditions</tt> - optional, standard ActiveRecord SQL contition clause
+        # * <tt>:dependent</tt> - options, can pass fun options like :dependent => :destroy.
         #
         def acts_as_network(relationship, options = {})
           configuration = { 
@@ -230,28 +231,28 @@ module Zetetic #:nodoc:
           configuration.update(options) if options.is_a?(Hash)
       
           if configuration[:through].nil?
-            has_and_belongs_to_many "#{relationship}_out".to_sym, :class_name => name,  
-              :foreign_key => configuration[:foreign_key], :association_foreign_key => configuration[:association_foreign_key],
-              :join_table => configuration[:join_table], :conditions => configuration[:conditions]
+            habtm_options = { :class_name => name }
+            if d = options[:dependent] ; habtm_options[:dependent] = d ; end
+            has_and_belongs_to_many "#{relationship}_out".to_sym, habtm_options.merge( { :foreign_key => configuration[:foreign_key], :association_foreign_key => configuration[:association_foreign_key], :join_table => configuration[:join_table], :conditions => configuration[:conditions] } )
           
-            has_and_belongs_to_many "#{relationship}_in".to_sym, :class_name => name,  
-              :foreign_key => configuration[:association_foreign_key], :association_foreign_key => configuration[:foreign_key],
-              :join_table => configuration[:join_table], :conditions => configuration[:conditions]
+            has_and_belongs_to_many "#{relationship}_in".to_sym, habtm_options.merge( { :foreign_key => configuration[:association_foreign_key], :association_foreign_key => configuration[:foreign_key],
+              :join_table => configuration[:join_table], :conditions => configuration[:conditions] } )
           
           else
             through_class = configuration[:through].to_s.classify
             through_sym = configuration[:through]
       
+            through_options = { :class_name => through_class }
+            if d = options[:dependent] ; through_options[:dependent] = d ; end
+
             # a node has many outbound realationships
-            has_many "#{through_sym}_out".to_sym, :class_name => through_class, 
-              :foreign_key => configuration[:foreign_key]
+            has_many "#{through_sym}_out".to_sym, through_options.merge( { :foreign_key => configuration[:foreign_key] } )
             has_many "#{relationship}_out".to_sym, :through => "#{through_sym}_out".to_sym, 
               :source => "#{name.tableize.singularize}_target",  :foreign_key => configuration[:foreign_key],
               :conditions => configuration[:conditions]
       
             # a node has many inbound relationships
-            has_many "#{through_sym}_in".to_sym, :class_name => through_class, 
-              :foreign_key => configuration[:association_foreign_key]
+            has_many "#{through_sym}_in".to_sym, through_options.merge( { :foreign_key => configuration[:association_foreign_key] } )
             has_many "#{relationship}_in".to_sym, :through => "#{through_sym}_in".to_sym, 
               :source => name.tableize.singularize, :foreign_key => configuration[:association_foreign_key],
               :conditions => configuration[:conditions]
